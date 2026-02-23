@@ -1,0 +1,90 @@
+---
+title: "Finance Tracker Dashboard"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(flexdashboard)
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(DT)
+
+df <- read_excel("D:/Sneha_07/finance-expense-categorization-dataset (1).xlsx")
+
+df <- df %>%
+  mutate(
+    transaction_date = as.Date(transaction_date),
+    month = floor_date(transaction_date, "month"),
+    amount = as.numeric(amount)
+  )
+
+monthly_expense <- df %>%
+  group_by(month) %>%
+  summarise(total = sum(amount))
+
+category_expense <- df %>%
+  group_by(category) %>%
+  summarise(total = sum(amount))
+
+total_expense <- sum(df$amount)
+total_income <- 30000 * length(unique(df$month))
+savings <- total_income - total_expense
+```
+
+Row
+-------------------------------------
+### Total Expense
+```{r}
+valueBox(total_expense, icon = "fa-money", color = "danger")
+```
+
+### Total Income
+```{r}
+valueBox(total_income, icon = "fa-wallet", color = "success")
+```
+
+### Savings
+```{r}
+valueBox(savings, icon = "fa-piggy-bank", color = "primary")
+```
+
+Row
+-------------------------------------
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Monthly Expense Trend
+```{r}
+ggplot(monthly_expense, aes(month, total)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  theme_minimal()
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Category Spending
+```{r}
+ggplot(category_expense,
+       aes(reorder(category,total), total)) +
+  geom_col() +
+  coord_flip() +
+  theme_minimal()
+```
+
+Row
+-----------------------------------------------------------------------
+### Transaction Details
+```{r}
+datatable(df)
+```
+
